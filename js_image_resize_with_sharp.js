@@ -8,8 +8,20 @@ export async function POST(request) {
             return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
         }
 
+        // Fetch the watermark image from a URL
+        const watermarkResponse = await axios.get('https://allfilmproductions.com/assets/images/logo.png', {
+            responseType: 'arraybuffer',
+        });
+        const watermarkBuffer = Buffer.from(watermarkResponse.data, 'base64');
+
+        // Verify watermark buffer
+        sharp(watermarkBuffer).toBuffer()
+            .then(() => console.log('Watermark is valid'))
+            .catch(err => console.error('Invalid watermark format:', err));
+
         const croppedImageBuffer = await sharp(Buffer.from(fileBuffer, 'base64'))
             .resize(parseInt(width), parseInt(height))
+            .composite([{ input: watermarkBuffer, gravity: 'southeast' }]) // Position watermark at the bottom right
             .toBuffer();
 
         console.log("post method message", croppedImageBuffer)
